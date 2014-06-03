@@ -10,7 +10,6 @@ Bootstrap(app)
 
 @app.route("/")
 def index():
-    players = list(Players.select(lambda p: p.games >= 1000).order_by(desc(Players.returns))[:100])
     return render_template('index.html')
 
 @app.route("/stats/<player>")
