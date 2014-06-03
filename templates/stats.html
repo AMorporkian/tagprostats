@@ -1,0 +1,37 @@
+{% extends "index.html" %}
+{% block title %} Player stats for {{ name }} {% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="main">
+        <div class="panel panel-default">
+            <!-- Default panel contents -->
+            <div class="panel-heading">Stats for {{name}}</div>
+            <div class="panel-body">
+
+
+            <!-- Table -->
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th>Per Hour</th>
+                    <th>Per Game</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for item, value in stats.iteritems() %}
+                <tr>
+                    <td>{{ item }}</td>
+                    <td>{{ value }}</td>
+                    <td>{{'%0.2f'| format(value/stats['Hours']|float)}}</td>
+                    <td>{{'%0.2f'| format(value/stats['Games']|float)}}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
