@@ -1,4 +1,4 @@
 tagprostats
 ===========
 
-Tagprostats.com code.
+The source code for http://www.tagprostats.com. Excuse the piss-poor frontend.
