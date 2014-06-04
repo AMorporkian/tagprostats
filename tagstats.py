@@ -43,6 +43,8 @@ def player_view(player):
     player = Players.get(name=player)
     if player is None:
         abort(404)
+    keys = ["Captures", "Disconnects", "Drops", "Games", "Grabs", "Hold", "Hours",
+     "Losses", "Popped", "Prevent", "Returns", "Support", "Tags", "Wins"]
     stats = {
         "Captures": player.captures,
         "Disconnects": player.disconnects,
@@ -58,8 +60,24 @@ def player_view(player):
         "Support": player.support,
         "Tags": player.tags,
         "Wins": player.wins}
+    monthly_stats = dict(zip(keys, (player.monthly.captures, player.monthly.disconnects, player.monthly.drops,
+                                    player.monthly.games, player.monthly.grabs, player.monthly.hold,
+                                    player.monthly.hours/60/60, player.monthly.losses, player.monthly.popped,
+                                    player.monthly.prevent, player.monthly.returns, player.monthly.support,
+                                    player.monthly.tags, player.monthly.wins)))
+    weekly_stats = dict(zip(keys, (player.weekly.captures, player.weekly.disconnects, player.weekly.drops,
+                                    player.weekly.games, player.weekly.grabs, player.weekly.hold,
+                                    player.weekly.hours/60/60, player.weekly.losses, player.weekly.popped,
+                                    player.weekly.prevent, player.weekly.returns, player.weekly.support,
+                                    player.weekly.tags, player.weekly.wins)))
+    daily_stats = dict(zip(keys, (player.daily.captures, player.daily.disconnects, player.daily.drops,
+                                player.daily.games, player.daily.grabs, player.daily.hold,
+                                player.daily.hours/60/60, player.daily.losses, player.daily.popped,
+                                player.daily.prevent, player.daily.returns, player.daily.support,
+                                player.daily.tags, player.daily.wins)))
     ranks = {k: getattr(player.ranks, k.lower(), 'Unknown') for k in stats.keys()}
-    return render_template('stats.html', name=player.name, stats=stats, ranks=ranks, profile_string=player.profile_string, last_updated=player.last_updated)
+    return render_template('stats.html', name=player.name, stats=stats, ranks=ranks, profile_string=player.profile_string, last_updated=player.last_updated,
+                           monthly_stats=monthly_stats, weekly_stats=weekly_stats, daily_stats=daily_stats)
 
 @app.route("/stats", methods=["GET"])
 def stat_redirect():
@@ -94,4 +112,6 @@ if __name__ == "__main__":
     app.wsgi_app = with_transaction(app.wsgi_app)
     app.jinja_env.globals.update(ordinalize=inflection.ordinalize)
     app.jinja_env.globals.update(humanize=humanize.naturaltime)
-    app.run(debug=False)
+    app.jinja_env.globals.update(sorted=sorted)
+    app.jinja_env.globals.update(iter=iter)
+    app.run(debug=True)
