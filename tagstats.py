@@ -94,4 +94,4 @@ if __name__ == "__main__":
     app.wsgi_app = with_transaction(app.wsgi_app)
     app.jinja_env.globals.update(ordinalize=inflection.ordinalize)
     app.jinja_env.globals.update(humanize=humanize.naturaltime)
-    app.run(debug=True)
+    app.run(debug=False)

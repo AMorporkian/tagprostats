@@ -1,7 +1,7 @@
 from pony.orm import *
 from datetime import datetime
 
-db = Database('sqlite', 'players.sqlite', create_db=True)
+db = Database('sqlite', 'players.sqlite', create_db=False)
 pony.options.MAX_FETCH_COUNT=50000
 
 class Players(db.Entity):
@@ -219,4 +219,4 @@ class Daily(db.Entity):
     tags_per_game = Optional(float)
     wins_per_game = Optional(float)
 
-db.generate_mapping(create_tables=True)
+db.generate_mapping(create_tables=False)
