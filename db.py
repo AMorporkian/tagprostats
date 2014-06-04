@@ -2,6 +2,7 @@ from pony.orm import *
 from datetime import datetime
 
 db = Database('sqlite', 'players.sqlite', create_db=True)
+pony.options.MAX_FETCH_COUNT=50000
 
 class Players(db.Entity):
     _table_ = "profile_stats"

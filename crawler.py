@@ -25,10 +25,10 @@ def update_player(player):
         print "{}/{} done.".format(c, total)
 
 with db_session:
-    players = list(select(x for x in Players))
-    total = len(players)
+    players = select(x for x in Players)
     p = Pool(50)
-    res = p.map_async(update_player, players)
+    total = len(players)
+    res = p.imap(update_player, players)
     gevent.wait([res])
     print "Committing..."
     commit()
