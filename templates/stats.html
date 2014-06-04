@@ -5,8 +5,13 @@
 <div class="row">
     <div class="col-lg-2">
 
-            <div class="container">
-            <canvas id="myChart" width="275" height="300"></canvas>
+            <div class="panel panel-default">
+            <div class="panel-heading">
+            <h3 class="text-center panel-title">Ranking (per game)</h3>
+            </div>
+            <div class="panel-body canvas-container">
+            <canvas id="myChart" width="275" height="275"></canvas>
+            </div>
             </div>
 
     </div>
@@ -15,8 +20,10 @@
             <div class="col-lg-6">
             <div class="panel panel-default">
                 <!-- Default panel contents -->
-                <div class="panel-heading"><h3 class="panel-title">All-time stats for {{name}}</h3></div>
-
+                <div class="panel-heading"><h3 class="panel-title text-center">All-time stats for {{name}}</h3></div>
+                <div class="panel-body">
+                    <a href="http://tagpro-origin.koalabeast.com/profile/{{profile_string}}"><span class="glyphicon glyphicon-link pull-right"></span></a><h6 class="text-center">Last updated: {{humanize(last_updated)}}</h6>
+                </div>
                     <!-- Table -->
                     <table class="table">
                         <thead>
@@ -65,9 +72,9 @@
             	datasets : [
 		{
 			data : data,
-			fillColor : "rgba(220,220,220,0.5)",
-			strokeColor : "rgba(220,220,220,1)",
-			pointColor : "rgba(220,220,220,1)",
+			fillColor : "rgba(30,30,220,0.5)",
+			strokeColor : "rgba(60,60,220,1)",
+			pointColor : "rgba(90,90,220,1)",
 			pointStrokeColor : "#fff",
 		}]};
 		    var options = {

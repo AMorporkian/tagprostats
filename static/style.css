@@ -19,3 +19,9 @@ body {
 .table td {
    border-right: 1px solid gray;
 }
+
+canvas-container {
+        margin-right: auto;
+        margin-left: auto;
+        width: 800px;
+    }

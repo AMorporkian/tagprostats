@@ -5,7 +5,7 @@ from flask_bootstrap import Bootstrap
 import inflection
 from pony.orm import *
 from db import db, Players
-
+import humanize
 app = Flask(__name__)
 Bootstrap(app)
 
@@ -59,7 +59,7 @@ def player_view(player):
         "Tags": player.tags,
         "Wins": player.wins}
     ranks = {k: getattr(player.ranks, k.lower(), 'Unknown') for k in stats.keys()}
-    return render_template('stats.html', name=player.name, stats=stats, ranks=ranks)
+    return render_template('stats.html', name=player.name, stats=stats, ranks=ranks, profile_string=player.profile_string, last_updated=player.last_updated)
 
 @app.route("/stats", methods=["GET"])
 def stat_redirect():
@@ -71,11 +71,27 @@ def autocomplete():
     name = request.args.get('term')
     if name is None:
         return json.dumps([])
-    d = json.dumps(list(select(c.name for c in Players if c.name.lower().startswith(name.lower()) and len(c.name) > 0).order_by(lambda k: k.lower())[:50]))
+    d = json.dumps(select(c.name for c in Players if c.name.lower().startswith(name.lower()) and len(c.name) > 0).order_by(lambda k: k.lower())[:50])
     return d
 
+@app.route("/top")
+def top():
+    return "TODO"
+
+@app.route("/help")
+def help():
+    return "TODO"
+
+@app.route("/compare")
+def compare():
+    return "TODO"
+
+@app.route("/about")
+def about():
+    return "TODO"
 
 if __name__ == "__main__":
     app.wsgi_app = with_transaction(app.wsgi_app)
     app.jinja_env.globals.update(ordinalize=inflection.ordinalize)
+    app.jinja_env.globals.update(humanize=humanize.naturaltime)
     app.run(debug=True)
