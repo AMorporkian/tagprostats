@@ -1,3 +1,5 @@
+lxml
+gevent
 flask
 pony
 flask_bootstrap
