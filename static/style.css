@@ -1,12 +1,13 @@
 body {
   padding-top: 50px;
+  font-family: 'Roboto', sans-serif;
 }
 .main {
   padding: 40px 15px;
 
 }
 .ui-autocomplete {
-    max-height: 100px;
+    max-height: 200px;
     max-width: 400px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -15,3 +16,6 @@ body {
   * html .ui-autocomplete {
     height: 100px;
   }
+.table td {
+   border-right: 1px solid gray;
+}

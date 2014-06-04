@@ -2,6 +2,7 @@ import json
 import pprint
 from flask import Flask, render_template, request, abort, redirect
 from flask_bootstrap import Bootstrap
+import inflection
 from pony.orm import *
 from db import db, Players
 
@@ -57,7 +58,8 @@ def player_view(player):
         "Support": player.support,
         "Tags": player.tags,
         "Wins": player.wins}
-    return render_template('stats.html', name=player.name, stats=stats)
+    ranks = {k: getattr(player.ranks, k.lower(), 'Unknown') for k in stats.keys()}
+    return render_template('stats.html', name=player.name, stats=stats, ranks=ranks)
 
 @app.route("/stats", methods=["GET"])
 def stat_redirect():
@@ -75,4 +77,5 @@ def autocomplete():
 
 if __name__ == "__main__":
     app.wsgi_app = with_transaction(app.wsgi_app)
+    app.jinja_env.globals.update(ordinalize=inflection.ordinalize)
     app.run(debug=True)

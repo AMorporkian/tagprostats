@@ -1,4 +1,5 @@
 from db import *
+
 """
     captures = Optional(int)
     disconnects = Optional(int)
@@ -15,38 +16,40 @@ from db import *
     support = Optional(int)
     tags = Optional(int)
 """
-rankable_stats = ['captures', 'disconnects', 'drops', 'games', 'grabs',
-                  'hold', 'hours', 'losses', 'non_return_tags', 'popped',
-                  'prevent', 'returns', 'support', 'tags']
-sql_debug(True)
+# sql_debug(True)
 with db_session:
-    data = dict(
-    captures = [x.name for x in select(p for p in Players).order_by(lambda p: p.captures)],
-    disconnects = [x.name for x in select(p for p in Players).order_by(lambda p: p.disconnects)],
-    drops = [x.name for x in select(p for p in Players).order_by(lambda p: p.drops)],
-    games = [x.name for x in select(p for p in Players).order_by(lambda p: p.games)],
-    grabs = [x.name for x in select(p for p in Players).order_by(lambda p: p.grabs)],
-    hold = [x.name for x in select(p for p in Players).order_by(lambda p: p.hold)],
-    hours = [x.name for x in select(p for p in Players).order_by(lambda p: p.hours)],
-    losses = [x.name for x in select(p for p in Players).order_by(lambda p: p.losses)],
-    non_return_tags = [x.name for x in select(p for p in Players).order_by(lambda p: p.non_return_tags)],
-    popped = [x.name for x in select(p for p in Players).order_by(lambda p: p.popped)],
-    prevent = [x.name for x in select(p for p in Players).order_by(lambda p: p.prevent)],
-    returns = [x.name for x in select(p for p in Players).order_by(lambda p: p.returns)],
-    support = [x.name for x in select(p for p in Players).order_by(lambda p: p.support)],
-    tags = [x.name for x in select(p for p in Players).order_by(lambda p: p.tags)])
+    data = dict(captures=select(p for p in Players).order_by(
+        lambda p: desc(p.captures)),
+                disconnects=select(p for p in Players).order_by(
+                    lambda p: desc(p.disconnects)),
+                drops=select(p for p in Players).order_by(
+                    lambda p: desc(p.drops)),
+                games=select(p for p in Players).order_by(
+                    lambda p: desc(p.games)),
+                grabs=select(p for p in Players).order_by(
+                    lambda p: desc(p.grabs)),
+                hold=select(p for p in Players).order_by(
+                    lambda p: desc(p.hold)),
+                hours=select(p for p in Players).order_by(
+                    lambda p: desc(p.hours)),
+                losses=select(p for p in Players).order_by(
+                    lambda p: desc(p.losses)),
+                popped=select(p for p in Players).order_by(
+                    lambda p: desc(p.popped)),
+                prevent=select(p for p in Players).order_by(
+                    lambda p: desc(p.prevent)),
+                returns=select(p for p in Players).order_by(
+                    lambda p: desc(p.returns)),
+                support=select(p for p in Players).order_by(
+                    lambda p: desc(p.support)),
+                tags=select(p for p in Players).order_by(
+                    lambda p: desc(p.tags)),
+                wins=select(p for p in Players).order_by(
+                    lambda p: desc(p.wins)))
 
-with db_session:
-    for i, player in enumerate(select(p for p in Players)):
-        p_dict = {}
-        for item, l in data.iteritems():
-            try:
-                p_dict[item] = l.index(player.name)
-            except Exception as e:
-                print e
-                p_dict[item] = None
-        Ranks(player_id=player, **p_dict)
-        if not i%100:
-            print "Finished  {}".format(i)
 
+    for k, v in data.iteritems():
+        print k
+        for i, player in enumerate(v):
+            setattr(player.ranks, k, i)
     commit()

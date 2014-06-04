@@ -2,50 +2,59 @@
 {% block title %} Player stats for {{ name }} {% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row">
-        <div class="col-lg-3">
+<div class="row">
+    <div class="col-lg-2">
 
-            <canvas id="myChart" width="300" height="300"></canvas>
+            <div class="container">
+            <canvas id="myChart" width="275" height="300"></canvas>
+            </div>
 
+    </div>
+    <div class="col-lg-10">
+        <div class="row">
+            <div class="col-lg-6">
+            <div class="panel panel-default">
+                <!-- Default panel contents -->
+                <div class="panel-heading"><h3 class="panel-title">All-time stats for {{name}}</h3></div>
+
+                    <!-- Table -->
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Value</th>
+                            <th>Per Hour</th>
+                            <th>Per Game</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item, value in stats.iteritems() %}
+                        <tr>
+                            <td>{{ item }}</td>
+                            <td><a href="#">{{value}}<span class="badge pull-right">Ranked {{ordinalize(ranks[item])}}</span></a></td>
+                            <td>{{'%0.2f'|
+                                format(value/stats['Hours']|float)}}
+                            </td>
+                            <td>{{'%0.2f'|
+                                format(value/stats['Games']|float)}}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+            </div>
+            </div>
         </div>
-        <div class="col-lg-9">
-        <div class="panel panel-default">
-            <!-- Default panel contents -->
-            <div class="panel-heading">Stats for {{name}}</div>
-            <div class="panel-body">
-
-
-            <!-- Table -->
-            <table class="table">
-                <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Value</th>
-                    <th>Per Hour</th>
-                    <th>Per Game</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for item, value in stats.iteritems() %}
-                <tr>
-                    <td>{{ item }}</td>
-                    <td>{{ value }}</td>
-                    <td>{{'%0.2f'| format(value/stats['Hours']|float)}}</td>
-                    <td>{{'%0.2f'| format(value/stats['Games']|float)}}</td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table></div>
-        </div></div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
-    {{super()}}
-    <script src="{{url_for('static', filename='chart.min.js')}}" type="text/javascript"></script>
-    <script type="text/javascript">
+{{super()}}
+<script src="{{url_for('static', filename='chart.min.js')}}"
+        type="text/javascript"></script>
+<script type="text/javascript">
         //Get context with jQuery - using jQuery's .get() method.
         //This will get the first returned node in the jQuery collection.
 
@@ -55,13 +64,24 @@
             labels : ["Captures", "Drops", "Hold", "Popped", "Prevent", "Returns", "Support"],
             	datasets : [
 		{
+			data : data,
 			fillColor : "rgba(220,220,220,0.5)",
 			strokeColor : "rgba(220,220,220,1)",
 			pointColor : "rgba(220,220,220,1)",
 			pointStrokeColor : "#fff",
-			data : data
 		}]};
-            var myNewChart = new Chart(ctx).Radar(chart_data);
+		    var options = {
+		    scaleOverlay: true,
+			scaleOverride: true,
+			scaleStartValue: 0,
+			scaleSteps: 4,
+			scaleStepWidth: .25,
+
+		    };
+
+            var myNewChart = new Chart(ctx).Radar(chart_data, options);
         });
-    </script>
+
+
+</script>
 {% endblock %}
