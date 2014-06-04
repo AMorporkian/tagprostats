@@ -11,6 +11,31 @@ Bootstrap(app)
 @app.route("/")
 def index():
     return render_template('index.html')
+#sql_debug(True)
+
+@app.route("/radar/<player>")
+def radar_view(player):
+    player = Players.get(name=player)
+    if player is None:
+        abort(404)
+
+    max_caps = (max(p.captures_per_game for p in Players if p.games > 250))
+    max_drops = (max(p.drops_per_game for p in Players if p.games > 250))
+    max_hold = (max(p.hold_per_game for p in Players if p.games > 250))
+    max_popped = (max(p.popped_per_game for p in Players if p.games > 250))
+    max_prevent = (max(p.prevent_per_game for p in Players if p.games > 250))
+    max_returns = (max(p.returns_per_game for p in Players if p.games > 250))
+    max_support = (max(p.support_per_game for p in Players if p.games > 250))
+    print max_caps
+
+    caps = player.captures_per_game/max_caps
+    drops = player.drops_per_game/max_drops
+    hold = player.hold_per_game/max_hold
+    popped = player.popped_per_game/max_popped
+    prevent = player.prevent_per_game/max_prevent
+    returns = player.returns_per_game/max_returns
+    support = player.support_per_game/max_support
+    return json.dumps([caps, drops, hold, popped, prevent, returns, support])
 
 @app.route("/stats/<player>")
 def player_view(player):
@@ -46,6 +71,8 @@ def autocomplete():
         return json.dumps([])
     d = json.dumps(list(select(c.name for c in Players if c.name.lower().startswith(name.lower()) and len(c.name) > 0).order_by(lambda k: k.lower())[:50]))
     return d
+
+
 if __name__ == "__main__":
     app.wsgi_app = with_transaction(app.wsgi_app)
     app.run(debug=True)
