@@ -49,7 +49,7 @@ def player_view(player):
         "Games": player.games,
         "Grabs": player.grabs,
         "Hold": player.hold,
-        "Hours": player.hours,
+        "Hours": player.hours/60/60,
         "Losses": player.losses,
         "Popped": player.popped,
         "Prevent": player.prevent,
