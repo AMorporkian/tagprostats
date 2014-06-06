@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, abort, redirect
 from flask_bootstrap import Bootstrap
 import inflection
 from pony.orm import *
-from db import db, Players
+from db import db, Player, WeeklyStats, MonthlyStats, DailyStats
 import humanize
 app = Flask(__name__)
 Bootstrap(app)
@@ -16,17 +16,17 @@ def index():
 
 @app.route("/radar/<player>")
 def radar_view(player):
-    player = Players.get(name=player)
+    player = Player.get(name=player)
     if player is None:
         abort(404)
 
-    max_caps = (max(p.captures_per_game for p in Players if p.games > 250))
-    max_drops = (max(p.drops_per_game for p in Players if p.games > 250))
-    max_hold = (max(p.hold_per_game for p in Players if p.games > 250))
-    max_popped = (max(p.popped_per_game for p in Players if p.games > 250))
-    max_prevent = (max(p.prevent_per_game for p in Players if p.games > 250))
-    max_returns = (max(p.returns_per_game for p in Players if p.games > 250))
-    max_support = (max(p.support_per_game for p in Players if p.games > 250))
+    max_caps = (max(p.captures_per_game for p in Player if p.games > 250))
+    max_drops = (max(p.drops_per_game for p in Player if p.games > 250))
+    max_hold = (max(p.hold_per_game for p in Player if p.games > 250))
+    max_popped = (max(p.popped_per_game for p in Player if p.games > 250))
+    max_prevent = (max(p.prevent_per_game for p in Player if p.games > 250))
+    max_returns = (max(p.returns_per_game for p in Player if p.games > 250))
+    max_support = (max(p.support_per_game for p in Player if p.games > 250))
     print max_caps
 
     caps = player.captures_per_game/max_caps
@@ -40,42 +40,45 @@ def radar_view(player):
 
 @app.route("/stats/<player>")
 def player_view(player):
-    player = Players.get(name=player)
+    player = Player.get(name=player)
     if player is None:
         abort(404)
     keys = ["Captures", "Disconnects", "Drops", "Games", "Grabs", "Hold", "Hours",
      "Losses", "Popped", "Prevent", "Returns", "Support", "Tags", "Wins"]
     stats = {
-        "Captures": player.captures,
-        "Disconnects": player.disconnects,
-        "Drops": player.drops,
-        "Games": player.games,
-        "Grabs": player.grabs,
-        "Hold": player.hold,
-        "Hours": player.hours/60/60,
-        "Losses": player.losses,
-        "Popped": player.popped,
-        "Prevent": player.prevent,
-        "Returns": player.returns,
-        "Support": player.support,
-        "Tags": player.tags,
-        "Wins": player.wins}
-    monthly_stats = dict(zip(keys, (player.monthly.captures, player.monthly.disconnects, player.monthly.drops,
-                                    player.monthly.games, player.monthly.grabs, player.monthly.hold,
-                                    player.monthly.hours/60/60, player.monthly.losses, player.monthly.popped,
-                                    player.monthly.prevent, player.monthly.returns, player.monthly.support,
-                                    player.monthly.tags, player.monthly.wins)))
-    weekly_stats = dict(zip(keys, (player.weekly.captures, player.weekly.disconnects, player.weekly.drops,
-                                    player.weekly.games, player.weekly.grabs, player.weekly.hold,
-                                    player.weekly.hours/60/60, player.weekly.losses, player.weekly.popped,
-                                    player.weekly.prevent, player.weekly.returns, player.weekly.support,
-                                    player.weekly.tags, player.weekly.wins)))
-    daily_stats = dict(zip(keys, (player.daily.captures, player.daily.disconnects, player.daily.drops,
-                                player.daily.games, player.daily.grabs, player.daily.hold,
-                                player.daily.hours/60/60, player.daily.losses, player.daily.popped,
-                                player.daily.prevent, player.daily.returns, player.daily.support,
-                                player.daily.tags, player.daily.wins)))
-    ranks = {k: getattr(player.ranks, k.lower(), 'Unknown') for k in stats.keys()}
+        "Captures": player.all_time.captures,
+        "Disconnects": player.all_time.disconnects,
+        "Drops": player.all_time.drops,
+        "Games": player.all_time.games,
+        "Grabs": player.all_time.grabs,
+        "Hold": player.all_time.hold,
+        "Hours": player.all_time.hours/60/60,
+        "Losses": player.all_time.losses,
+        "Popped": player.all_time.popped,
+        "Prevent": player.all_time.prevent,
+        "Returns": player.all_time.returns,
+        "Support": player.all_time.support,
+        "Tags": player.all_time.tags,
+        "Wins": player.all_time.wins}
+    monthly = select(x for x in MonthlyStats).order_by(lambda x: desc(x.period)).limit(1)[0]
+    monthly_stats = dict(zip(keys, (monthly.captures, monthly.disconnects, monthly.drops,
+                                    monthly.games, monthly.grabs, monthly.hold,
+                                    monthly.hours/60/60, monthly.losses, monthly.popped,
+                                    monthly.prevent, monthly.returns, monthly.support,
+                                    monthly.tags, monthly.wins)))
+    weekly = select(x for x in WeeklyStats).order_by(lambda x: desc(x.period)).limit(1)[0]
+    weekly_stats = dict(zip(keys, (weekly.captures, weekly.disconnects, weekly.drops,
+                                    weekly.games, weekly.grabs, weekly.hold,
+                                    weekly.hours/60/60, weekly.losses, weekly.popped,
+                                    weekly.prevent, weekly.returns, weekly.support,
+                                    weekly.tags, weekly.wins)))
+    daily = select(x for x in DailyStats).order_by(lambda x: desc(x.period)).limit(1)[0]
+    daily_stats = dict(zip(keys, (daily.captures, daily.disconnects, daily.drops,
+                                daily.games, daily.grabs, daily.hold,
+                                daily.hours/60/60, daily.losses, daily.popped,
+                                daily.prevent, daily.returns, daily.support,
+                                daily.tags, daily.wins)))
+    ranks = {k: 0 for k in stats.keys()}#getattr(player.all_time.ranks, k.lower(), 'Unknown') for k in stats.keys()}
     return render_template('stats.html', name=player.name, stats=stats, ranks=ranks, profile_string=player.profile_string, last_updated=player.last_updated,
                            monthly_stats=monthly_stats, weekly_stats=weekly_stats, daily_stats=daily_stats)
 
@@ -89,7 +92,7 @@ def autocomplete():
     name = request.args.get('term')
     if name is None:
         return json.dumps([])
-    d = json.dumps(select(c.name for c in Players if c.name.lower().startswith(name.lower()) and len(c.name) > 0).order_by(lambda k: k.lower())[:50])
+    d = json.dumps(select(c.name for c in Player if c.name.lower().startswith(name.lower()) and len(c.name) > 0).order_by(lambda k: k.lower())[:50])
     return d
 
 @app.route("/top")
