@@ -3,6 +3,7 @@ import json
 import random
 import operator
 import itertools
+import subprocess
 
 from gevent import monkey
 from gevent.pool import Pool
@@ -15,40 +16,55 @@ from lxml import html
 import urllib2
 from db import Session, Player, AllTimeStats, MonthlyStats, WeeklyStats, \
     DailyStats
+import ping
 
 def update(obj, d):
     for k, v in d.iteritems():
         setattr(obj, k, v)
 
 class Linker(object):
-    servers = ("http://tagpro-centra.koalabeast.com",
+    servers = ["http://tagpro-centra.koalabeast.com",
                "http://tagpro-pi.koalabeast.com",
                "http://tagpro-chord.koalabeast.com",
                "http://tagpro-diameter.koalabeast.com",
                "http://tagpro-origin.koalabeast.com",
                "http://tagpro-diameter2.koalabeast.com",
                "http://tagpro-sphere.koalabeast.com",
-               "http://tagpro-sector.koalabeast.com",
                "http://tagpro-radius.koalabeast.com",
-               "http://tagpro-orbit.koalabeast.com",)
+               "http://tagpro-orbit.koalabeast.com"]
+
+    def ping(self, server):
+        l = [float(line.rpartition('=')[-1][:-3]) for line in
+         subprocess.check_output(['ping', '-c', '1', server[7:]]).splitlines()[
+         1:-4]]
+        return int(sum(l)/len(l))
 
     def get_stats(self):
         rdict = {}
         for server in self.servers:
+            try:
+                d = self.ping(server)
+            except subprocess.CalledProcessError:
+                print "Removing server {} because it is unpingable.".format(server)
+                continue
+            if d > 150:
+                print "Removing server {} for high ping ({} ms)".format(server,
+                                                                        d)
+                continue
             players = json.load(urllib2.urlopen(server + "/stats"))['players']
             rdict[server] = players
         return rdict
 
     def generate_server_cycle(self):
         servers = []
-        for server, count in sorted(self.get_stats().items(),
-                                    key=operator.itemgetter(1)):
-            if count <= 5:
-                servers.extend([server, server, server, server, server])
-            elif count <= 10:
-                servers.extend([server, server, server])
-            elif count <= 20:
-                servers.append(server)
+        data = self.get_stats()
+        for i, (server, count) in enumerate(sorted(data.items(),
+                                    key=operator.itemgetter(1))):
+            if count > 25:
+                print 'Removing {} because it has >25 players on it.'.format(server)
+                continue
+            else:
+                servers.extend([server]*int(len(data)/(i+1)))
         if len(servers) == 0:
             raise ValueError("All servers have more than 25 people on them (!)")
         random.shuffle(servers)
@@ -62,7 +78,7 @@ class Updater(gevent.Greenlet):
         gevent.Greenlet.__init__(self)
         self.linker = Linker()
         pool_size, self.server_cycle = self.linker.generate_server_cycle()
-        self.pool = Pool(pool_size*2)
+        self.pool = Pool(50)
         self.profile_strings = profile_strings
         self.session = Session()
         self.count = 0
@@ -159,7 +175,7 @@ class Updater(gevent.Greenlet):
         print "Committed."
 if __name__ == '__main__':
     with open('ids.txt') as f:
-        players = [x.rstrip("\n") for x in f]
+        players = [x.rstrip("\n") for x in f][:2000]
     crawler = Updater(players)
     crawler.run()
     crawler.save()

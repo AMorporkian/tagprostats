@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Unicode, Float, \
     Date, create_engine
-from sqlalchemy.orm import relationship, sessionmaker, Query, query, Mapper
+from sqlalchemy.orm import relationship, sessionmaker, Query, query, Mapper, \
+    backref
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 Base = declarative_base()
@@ -68,7 +69,8 @@ class Stats(Base):
     tags_per_game = Column(Float)
     wins_per_game = Column(Float)
 
-    ranking = relationship("Ranking", uselist=False, backref="stats")
+    ranking = relationship("Ranking", uselist=False, backref=backref("stats",
+                           enable_typechecks=False))
 
 class AllTimeStats(Stats):
     __tablename__ = "all_time_stats"
@@ -208,7 +210,7 @@ class Current(Query):
                 for d in self.column_descriptions
                 if issubclass(d['expr'], Base)]
 
-    def is_current(self):
+    def current(self):
         model_class = self._get_models()[0]
         date = datetime.today().date()
         if model_class is DailyStats:
@@ -223,7 +225,7 @@ class Current(Query):
             return self
 
 
-engine = create_engine('sqlite:///test_players.db')  # , echo=True)
+engine = create_engine('postgresql://postgres:test@localhost/tagprostats')  # , echo=True)
 Session = sessionmaker(bind=engine, query_cls=Current)
 
 
