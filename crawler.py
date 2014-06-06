@@ -175,7 +175,7 @@ class Updater(gevent.Greenlet):
         print "Committed."
 if __name__ == '__main__':
     with open('ids.txt') as f:
-        players = [x.rstrip("\n") for x in f][:2000]
+        players = [x.rstrip("\n") for x in f]
     crawler = Updater(players)
     crawler.run()
     crawler.save()

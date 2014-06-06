@@ -2,7 +2,7 @@ from datetime import date, datetime
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Unicode, Float, \
     Date, create_engine
 from sqlalchemy.orm import relationship, sessionmaker, Query, query, Mapper, \
-    backref
+    backref, scoped_session
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 Base = declarative_base()
@@ -225,8 +225,8 @@ class Current(Query):
             return self
 
 
-engine = create_engine('postgresql://postgres:test@localhost/tagprostats')  # , echo=True)
-Session = sessionmaker(bind=engine, query_cls=Current)
+engine = create_engine('postgresql://postgres:test@localhost/tagprostats', echo=False)  # , echo=True)
+Session = scoped_session(sessionmaker(bind=engine, query_cls=Current))
 
 
 if __name__ == "__main__":

@@ -1,14 +1,16 @@
-import time
+from sqlalchemy import func
+from sqlalchemy.orm import aliased
+
 from db import Session, AllTimeStats, DailyStats, MonthlyStats, WeeklyStats, \
     Stats, Ranking
-import timeit
-import functools
+
 
 session = Session()
+
+
 def generate_rankings(query, t):
-    for stat in query:
-        if stat.ranking is None:
-            stat.ranking = Ranking()
+    for stat in query.filter(t.ranking == None):
+        stat.ranking = Ranking()
 
     columns = ['captures', 'disconnects', 'drops', 'games', 'grabs', 'hold',
                'hours', 'losses', 'popped', 'prevent', 'returns', 'support',
@@ -24,9 +26,15 @@ def generate_rankings(query, t):
 
     for s in columns:
         column = getattr(t, s)
+        s1 = aliased(Stats)
         print "   * Doing {}".format(s)
-        for i, stat in enumerate(query.order_by(column.desc())):
-            setattr(stat.ranking, s, i)
+        subq = session.query(
+            t.id.label("rid"),
+            func.rank().over(order_by=column.desc()).label('rank')).select_from(t).subquery("r")
+        update = Ranking.__table__.update().values({column: subq.c.rank}).where(
+            Ranking.id == subq.c.rid)
+        session.execute(update)
+
     print "Committing..."
     session.commit()
 
@@ -35,7 +43,7 @@ def main():
     all_stats = session.query(AllTimeStats).current()
     monthly_stats = session.query(MonthlyStats).current()
     weekly_stats = session.query(WeeklyStats).current()
-    daily_stats =  session.query(DailyStats).current()
+    daily_stats = session.query(DailyStats).current()
     print "Generating all-time rankings..."
     generate_rankings(all_stats, AllTimeStats)
     print "Generating monthly rankings..."
@@ -44,6 +52,7 @@ def main():
     generate_rankings(weekly_stats, WeeklyStats)
     print "Generating daily rankings..."
     generate_rankings(daily_stats, DailyStats)
+
 
 if __name__ == "__main__":
     main()

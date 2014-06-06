@@ -4,10 +4,11 @@ from flask import Flask, render_template, request, abort, redirect
 from flask_bootstrap import Bootstrap
 import inflection
 from pony.orm import *
-from db import db, Player, WeeklyStats, MonthlyStats, DailyStats
+from db import Session, AllTimeStats, MonthlyStats, WeeklyStats, DailyStats, Player
 import humanize
 app = Flask(__name__)
 Bootstrap(app)
+session = Session()
 
 @app.route("/")
 def index():
@@ -16,63 +17,70 @@ def index():
 
 @app.route("/radar/<player>")
 def radar_view(player):
-    player = Player.get(name=player)
-    if player is None:
-        abort(404)
+    player = session.query(Player).filter_by(name=player).first()
+    stats = player.all_time_stats
+    c = session.query(AllTimeStats)
+    max_caps = c.order_by(
+        AllTimeStats.captures_per_game.desc()).filter(AllTimeStats.captures_per_game is not None).first()
+    max_drops = c.order_by(
+        AllTimeStats.drops_per_game.desc()).first().drops_per_game
+    max_hold = c.order_by(
+        AllTimeStats.hold_per_game.desc()).first().hold_per_game
+    max_popped = c.order_by(
+        AllTimeStats.popped_per_game.desc()).first().popped_per_game
+    max_prevent = c.order_by(
+        AllTimeStats.prevent_per_game.desc()).first().prevent_per_game
+    max_returns = c.order_by(
+        AllTimeStats.returns_per_game.desc()).first().returns_per_game
+    max_support = c.order_by(
+        AllTimeStats.support_per_game.desc()).first().support_per_game
 
-    max_caps = (max(p.captures_per_game for p in Player if p.games > 250))
-    max_drops = (max(p.drops_per_game for p in Player if p.games > 250))
-    max_hold = (max(p.hold_per_game for p in Player if p.games > 250))
-    max_popped = (max(p.popped_per_game for p in Player if p.games > 250))
-    max_prevent = (max(p.prevent_per_game for p in Player if p.games > 250))
-    max_returns = (max(p.returns_per_game for p in Player if p.games > 250))
-    max_support = (max(p.support_per_game for p in Player if p.games > 250))
-    print max_caps
-
-    caps = player.captures_per_game/max_caps
-    drops = player.drops_per_game/max_drops
-    hold = player.hold_per_game/max_hold
-    popped = player.popped_per_game/max_popped
-    prevent = player.prevent_per_game/max_prevent
-    returns = player.returns_per_game/max_returns
-    support = player.support_per_game/max_support
+    caps = stats.captures_per_game/max_caps
+    drops = stats.drops_per_game/max_drops
+    hold = stats.hold_per_game/max_hold
+    popped = stats.popped_per_game/max_popped
+    prevent = stats.prevent_per_game/max_prevent
+    returns = stats.returns_per_game/max_returns
+    support = stats.support_per_game/max_support
     return json.dumps([caps, drops, hold, popped, prevent, returns, support])
 
 @app.route("/stats/<player>")
 def player_view(player):
-    player = Player.get(name=player)
+    player = session.query(Player).filter_by(name=player).first()
     if player is None:
         abort(404)
     keys = ["Captures", "Disconnects", "Drops", "Games", "Grabs", "Hold", "Hours",
      "Losses", "Popped", "Prevent", "Returns", "Support", "Tags", "Wins"]
     stats = {
-        "Captures": player.all_time.captures,
-        "Disconnects": player.all_time.disconnects,
-        "Drops": player.all_time.drops,
-        "Games": player.all_time.games,
-        "Grabs": player.all_time.grabs,
-        "Hold": player.all_time.hold,
-        "Hours": player.all_time.hours/60/60,
-        "Losses": player.all_time.losses,
-        "Popped": player.all_time.popped,
-        "Prevent": player.all_time.prevent,
-        "Returns": player.all_time.returns,
-        "Support": player.all_time.support,
-        "Tags": player.all_time.tags,
-        "Wins": player.all_time.wins}
-    monthly = select(x for x in MonthlyStats).order_by(lambda x: desc(x.period)).limit(1)[0]
+        "Captures": player.all_time_stats.captures,
+        "Disconnects": player.all_time_stats.disconnects,
+        "Drops": player.all_time_stats.drops,
+        "Games": player.all_time_stats.games,
+        "Grabs": player.all_time_stats.grabs,
+        "Hold": player.all_time_stats.hold,
+        "Hours": player.all_time_stats.hours/60/60,
+        "Losses": player.all_time_stats.losses,
+        "Popped": player.all_time_stats.popped,
+        "Prevent": player.all_time_stats.prevent,
+        "Returns": player.all_time_stats.returns,
+        "Support": player.all_time_stats.support,
+        "Tags": player.all_time_stats.tags,
+        "Wins": player.all_time_stats.wins}
+    monthly = session.query(MonthlyStats).current().filter_by(player=player.profile_string).first()
     monthly_stats = dict(zip(keys, (monthly.captures, monthly.disconnects, monthly.drops,
                                     monthly.games, monthly.grabs, monthly.hold,
                                     monthly.hours/60/60, monthly.losses, monthly.popped,
                                     monthly.prevent, monthly.returns, monthly.support,
                                     monthly.tags, monthly.wins)))
-    weekly = select(x for x in WeeklyStats).order_by(lambda x: desc(x.period)).limit(1)[0]
+    weekly = session.query(WeeklyStats).current().filter_by(
+        player=player.profile_string).first()
     weekly_stats = dict(zip(keys, (weekly.captures, weekly.disconnects, weekly.drops,
                                     weekly.games, weekly.grabs, weekly.hold,
                                     weekly.hours/60/60, weekly.losses, weekly.popped,
                                     weekly.prevent, weekly.returns, weekly.support,
                                     weekly.tags, weekly.wins)))
-    daily = select(x for x in DailyStats).order_by(lambda x: desc(x.period)).limit(1)[0]
+    daily = session.query(DailyStats).current().filter_by(
+        player=player.profile_string).first()
     daily_stats = dict(zip(keys, (daily.captures, daily.disconnects, daily.drops,
                                 daily.games, daily.grabs, daily.hold,
                                 daily.hours/60/60, daily.losses, daily.popped,
@@ -92,7 +100,9 @@ def autocomplete():
     name = request.args.get('term')
     if name is None:
         return json.dumps([])
-    d = json.dumps(select(c.name for c in Player if c.name.lower().startswith(name.lower()) and len(c.name) > 0).order_by(lambda k: k.lower())[:50])
+    names = session.query(Player.name).filter(Player.name.like('{}%'.format(name))).limit(50).all()
+    d = json.dumps([x[0] for x in names])
+    print d
     return d
 
 @app.route("/top")
