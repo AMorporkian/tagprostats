@@ -4,6 +4,7 @@ from db import Session, AllTimeStats, DailyStats, MonthlyStats, WeeklyStats, \
 import timeit
 import functools
 
+session = Session()
 def generate_rankings(query, t):
     for stat in query:
         if stat.ranking is None:
@@ -23,20 +24,26 @@ def generate_rankings(query, t):
 
     for s in columns:
         column = getattr(t, s)
-        print "Doing {}".format(s)
+        print "   * Doing {}".format(s)
         for i, stat in enumerate(query.order_by(column.desc())):
             setattr(stat.ranking, s, i)
-
+    print "Committing..."
+    session.commit()
 
 
 def main():
-    session = Session()
     all_stats = session.query(AllTimeStats).current()
     monthly_stats = session.query(MonthlyStats).current()
     weekly_stats = session.query(WeeklyStats).current()
     daily_stats =  session.query(DailyStats).current()
-
+    print "Generating all-time rankings..."
     generate_rankings(all_stats, AllTimeStats)
+    print "Generating monthly rankings..."
+    generate_rankings(monthly_stats, MonthlyStats)
+    print "Generating weekly rankings..."
+    generate_rankings(weekly_stats, WeeklyStats)
+    print "Generating daily rankings..."
+    generate_rankings(daily_stats, DailyStats)
 
 if __name__ == "__main__":
     main()
